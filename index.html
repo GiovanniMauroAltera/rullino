@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <title>Rullino</title>
+  <link rel="icon" href="icona.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Quintessential&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="stile.css">
+</head>
+<body>
+
+  <!-- Mentre carica -->
+  <section class="schermata" id="caricamento">
+    <div class="colonna centro">
+      <div class="rotella" aria-label="Caricamento"></div>
+    </div>
+  </section>
+
+  <!-- Link senza festa, o errore -->
+  <section class="schermata" id="problema" hidden>
+    <div class="colonna">
+      <p class="marchio">Rullino</p>
+      <h1 class="titolo-medio" id="problema-titolo">Qualcosa non va</h1>
+      <p class="paragrafo-grande testo-tenue" id="problema-testo"></p>
+      <div class="fila-pulsanti">
+        <button class="pulsante" id="problema-riprova" type="button">Riprova</button>
+        <a class="pulsante secondario" id="problema-organizza" href="organizza.html" hidden>Organizzo io una festa</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Benvenuto: l'invitato scrive il suo nome -->
+  <section class="schermata" id="benvenuto" hidden>
+    <div class="colonna">
+      <p class="marchio">Rullino</p>
+      <h1 class="titolo-grande" id="benvenuto-nome-festa"></h1>
+      <p class="paragrafo-grande" id="benvenuto-regole"></p>
+      <form id="modulo-nome" autocomplete="off">
+        <div class="messaggio-errore" id="errore-nome" hidden></div>
+        <label class="campo">
+          <span>Come ti chiami?</span>
+          <input class="inserimento" id="campo-nome" maxlength="30" required enterkeyhint="go" placeholder="Il tuo nome">
+          <small>Il nome compare sotto le foto che scatti.</small>
+        </label>
+        <button class="pulsante largo" id="pulsante-entra" type="submit">Prendi la macchinetta</button>
+      </form>
+      <p class="nota">Niente anteprima e niente seconde possibilità: ogni scatto è definitivo. Le foto restano nascoste a tutti fino allo sviluppo.</p>
+    </div>
+  </section>
+
+  <!-- La macchinetta -->
+  <section class="schermata fotocamera" id="fotocamera" hidden>
+    <div class="barra-alta">
+      <strong id="fotocamera-nome-festa"></strong>
+      <span class="pillola" id="indicatore-invio" hidden></span>
+    </div>
+    <div class="mirino">
+      <video id="video" playsinline muted autoplay></video>
+      <!-- l'anteprima del filtro (angoli scuri, grana) sopra il video -->
+      <div class="velo" id="velo"></div>
+      <div class="piano-b" id="piano-b" hidden>
+        <p id="piano-b-testo"></p>
+        <button class="pulsante" id="pulsante-piano-b" type="button">Usa la fotocamera del telefono</button>
+        <p class="nota" id="piano-b-nota">Se hai aperto il link da Instagram o WhatsApp, prova ad aprirlo con Safari o Chrome.</p>
+        <input type="file" id="file-piano-b" accept="image/*" capture="environment" hidden>
+      </div>
+    </div>
+    <div class="scelta-filtro" id="scelta-filtro" role="group" aria-label="Filtro della foto"></div>
+    <div class="corpo">
+      <button class="gira-lato" id="gira-lato" type="button" aria-label="Cambia fotocamera (davanti o dietro)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20 7h-3l-2-2H9L7 7H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1z"/>
+          <path d="M9 13a3 3 0 0 1 5-2.2M15 13a3 3 0 0 1-5 2.2"/>
+          <path d="M14 9.5v1.5h-1.5M10 16.5V15h1.5"/>
+        </svg>
+      </button>
+      <button class="scatto" id="pulsante-scatto" type="button" aria-label="Scatta"></button>
+      <div class="contatore">
+        <div class="finestrella"><canvas id="display-contatore" aria-hidden="true"></canvas></div>
+        <span id="testo-contatore">scatti</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Rullino finito: si aspetta lo sviluppo -->
+  <section class="schermata" id="attesa" hidden>
+    <div class="colonna">
+      <p class="marchio">Rullino</p>
+      <h1 class="titolo-grande" id="attesa-titolo">Rullino finito</h1>
+      <p class="paragrafo-grande" id="attesa-testo"></p>
+      <div class="display-grande"><canvas id="display-attesa" aria-hidden="true"></canvas></div>
+      <p class="messaggio-errore" id="attesa-invio" hidden></p>
+      <p class="nota">Quando si sviluppano, riapri questa pagina o inquadra di nuovo il QR code: troverai le foto di tutti.</p>
+    </div>
+  </section>
+
+  <!-- La galleria dopo lo sviluppo -->
+  <section class="schermata galleria" id="galleria" hidden>
+    <div class="colonna">
+      <p class="marchio">Rullino</p>
+      <div class="testa-galleria">
+        <h1 class="titolo-grande" id="galleria-nome-festa"></h1>
+        <p class="testo-tenue" id="galleria-conteggio"></p>
+      </div>
+      <div class="filtri" id="filtri" role="group" aria-label="Mostra le foto di"></div>
+      <div class="griglia" id="griglia"></div>
+      <p class="vuoto" id="galleria-vuota" hidden></p>
+      <p style="margin-top: 32px">
+        <button class="pulsante secondario piccolo" id="scarica-tutte" type="button" hidden>Scarica tutte le foto (zip)</button>
+      </p>
+    </div>
+  </section>
+
+  <!-- Una foto a schermo intero -->
+  <div class="visore" id="visore" hidden role="dialog" aria-modal="true" aria-label="Foto">
+    <div class="barra-alta">
+      <span id="visore-posizione"></span>
+      <button class="chiudi" id="visore-chiudi" type="button" aria-label="Chiudi">✕</button>
+    </div>
+    <div class="visore-foto" id="visore-foto">
+      <img id="visore-immagine" alt="">
+      <button class="freccia sinistra" id="visore-prima" type="button" aria-label="Foto precedente">‹</button>
+      <button class="freccia destra" id="visore-dopo" type="button" aria-label="Foto successiva">›</button>
+    </div>
+    <div class="visore-sotto">
+      <span id="visore-didascalia"></span>
+      <button class="pulsante piccolo" id="visore-salva" type="button">Salva la foto</button>
+    </div>
+  </div>
+
+  <div class="lampo" id="lampo"></div>
+
+  <script src="impostazioni.js"></script>
+  <script src="comune.js"></script>
+  <script src="filtri.js"></script>
+  <script src="invitati.js"></script>
+</body>
+</html>

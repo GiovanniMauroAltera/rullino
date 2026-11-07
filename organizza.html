@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <title>Organizza la festa – Rullino</title>
+  <link rel="icon" href="icona.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Quintessential&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="stile.css">
+</head>
+<body class="organizza">
+
+  <!-- Mentre carica -->
+  <section class="schermata" id="caricamento">
+    <div class="colonna centro">
+      <div class="rotella" aria-label="Caricamento"></div>
+    </div>
+  </section>
+
+  <!-- Creare una festa nuova -->
+  <section class="schermata" id="crea" hidden>
+    <div class="colonna">
+      <p class="marchio">Rullino</p>
+      <h1 class="titolo-grande">Organizza la festa</h1>
+      <p class="paragrafo-grande">Crea il rullino, metti il QR code dove lo vedono tutti, e ogni invitato avrà la sua macchinetta usa e getta nel telefono.</p>
+
+      <form class="pannello" id="modulo-crea" autocomplete="off">
+        <div class="messaggio-errore" id="errore-crea" hidden></div>
+
+        <label class="campo">
+          <span>Nome della festa</span>
+          <input class="inserimento" id="crea-nome" maxlength="60" required placeholder="Es. I 25 anni di Marta">
+        </label>
+
+        <fieldset class="campo">
+          <span>Scatti a testa</span>
+          <div class="scelte">
+            <label><input type="radio" name="scatti" value="5"><span>5</span></label>
+            <label><input type="radio" name="scatti" value="10"><span>10</span></label>
+            <label><input type="radio" name="scatti" value="15" checked><span>15</span></label>
+            <label><input type="radio" name="scatti" value="24"><span>24</span></label>
+            <label><input type="radio" name="scatti" value="36"><span>36</span></label>
+          </div>
+          <small>24 e 36 come i rullini veri. Potrai cambiarlo anche durante la festa.</small>
+        </fieldset>
+
+        <fieldset class="campo">
+          <span>Quando si sviluppano le foto</span>
+          <div class="scelte">
+            <label><input type="radio" name="sviluppo" value="domani10" checked><span id="etichetta-domani10">Domani alle 10:00</span></label>
+            <label><input type="radio" name="sviluppo" value="domani13"><span id="etichetta-domani13">Domani alle 13:00</span></label>
+            <label><input type="radio" name="sviluppo" value="scelgo"><span>Scelgo io</span></label>
+          </div>
+          <input class="inserimento" id="crea-data" type="datetime-local" style="margin-top:10px" hidden>
+          <small>Fino ad allora le foto non le vede nessuno. Puoi sempre premere "Sviluppa adesso".</small>
+        </fieldset>
+
+        <fieldset class="campo">
+          <span>Chi vede le foto dopo lo sviluppo</span>
+          <div class="scelte">
+            <label><input type="radio" name="galleria" value="tutti" checked><span>Tutti gli invitati</span></label>
+            <label><input type="radio" name="galleria" value="solo-io"><span>Solo io</span></label>
+          </div>
+        </fieldset>
+
+        <div class="campo riga-data">
+          <label class="spunta">
+            <input type="checkbox" id="crea-data-foto" checked>
+            <span>Data arancione sulle foto</span>
+          </label>
+          <span class="anteprima-data"><canvas id="anteprima-data" aria-hidden="true"></canvas></span>
+        </div>
+
+        <label class="campo">
+          <span>Il tuo codice segreto</span>
+          <input class="inserimento" id="crea-codice" minlength="4" maxlength="40" required placeholder="Almeno 4 caratteri">
+          <small>Ti serve per gestire la festa, anche da un altro telefono o dal PC. Segnatelo da qualche parte.</small>
+        </label>
+
+        <button class="pulsante largo" id="pulsante-crea" type="submit">Crea la festa</button>
+      </form>
+
+      <p class="nota">Hai già creato una festa? <a href="#" id="vai-apri">Aprila con il suo codice</a>.</p>
+    </div>
+  </section>
+
+  <!-- Riaprire una festa già creata -->
+  <section class="schermata" id="apri" hidden>
+    <div class="colonna">
+      <p class="marchio">Rullino</p>
+      <h1 class="titolo-grande">Apri la tua festa</h1>
+      <form class="pannello" id="modulo-apri" autocomplete="off">
+        <div class="messaggio-errore" id="errore-apri" hidden></div>
+        <label class="campo">
+          <span>Codice della festa</span>
+          <input class="inserimento" id="apri-festa" maxlength="12" required placeholder="Es. k7p2qx">
+          <small>Sono le 6 lettere dopo "?f=" nel link della festa.</small>
+        </label>
+        <label class="campo">
+          <span>Il tuo codice segreto</span>
+          <input class="inserimento" id="apri-codice" maxlength="40" required>
+        </label>
+        <button class="pulsante largo" id="pulsante-apri" type="submit">Apri la festa</button>
+      </form>
+      <p class="nota"><a href="#" id="vai-crea">Crea invece una festa nuova</a>.</p>
+    </div>
+  </section>
+
+  <!-- Il pannello della festa -->
+  <section class="schermata" id="pannello" hidden>
+    <div class="colonna">
+      <p class="marchio">Rullino</p>
+      <h1 class="titolo-grande" id="pannello-nome"></h1>
+      <p class="paragrafo-grande" id="pannello-stato"></p>
+
+      <div class="pannello">
+        <h2 class="titolo-medio">Il QR code per gli invitati</h2>
+        <div class="qr-e-link">
+          <div class="qr" id="qr"></div>
+          <div>
+            <p class="link-festa" id="link-festa"></p>
+            <div class="fila-pulsanti">
+              <button class="pulsante piccolo" id="copia-link" type="button">Copia il link</button>
+              <button class="pulsante piccolo" id="condividi-link" type="button" hidden>Manda il link</button>
+              <button class="pulsante secondario piccolo" id="mostra-cartello" type="button">Mostra a schermo intero</button>
+              <button class="pulsante secondario piccolo" id="stampa-cartello" type="button">Stampa il cartello</button>
+              <a class="pulsante secondario piccolo" id="apri-come-invitato" target="_blank" rel="noopener">Prova come invitato</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pannello">
+        <h2 class="titolo-medio">La festa finora</h2>
+        <div class="numeri">
+          <div><strong id="numero-ospiti">0</strong><span>invitati entrati</span></div>
+          <div><strong id="numero-foto">0</strong><span>foto scattate</span></div>
+          <div><strong id="numero-spazio">0</strong><span>MB usati su 500</span></div>
+        </div>
+        <ul class="elenco-ospiti" id="elenco-ospiti"></ul>
+        <p class="nota" id="nessun-ospite">Ancora nessuno. Appena qualcuno inquadra il QR code compare qui.</p>
+        <p class="nota" id="aiuto-scatti" hidden>Con +1 e +5 regali scatti a una persona sola: la sua macchinetta si ricarica da sola. Con −1 togli quelli regalati.</p>
+      </div>
+
+      <div class="pannello">
+        <h2 class="titolo-medio">Lo sviluppo</h2>
+        <p class="testo-tenue" id="sviluppo-testo"></p>
+        <div class="display-grande"><canvas id="display-sviluppo" aria-hidden="true"></canvas></div>
+        <p><button class="pulsante" id="sviluppa-adesso" type="button">Sviluppa adesso</button></p>
+
+        <div class="messaggio-errore" id="errore-modifiche" hidden></div>
+        <label class="campo">
+          <span>Cambia l'orario dello sviluppo</span>
+          <input class="inserimento" id="nuova-data" type="datetime-local">
+        </label>
+        <p><button class="pulsante secondario piccolo" id="salva-data" type="button">Salva l'orario</button></p>
+
+        <label class="campo" style="margin-top:24px">
+          <span>Scatti a testa</span>
+          <input class="inserimento" id="nuovi-scatti" type="number" min="1" max="100" inputmode="numeric" style="max-width:140px">
+          <small>Vale per tutti: se lo alzi, chi aveva finito il rullino può scattare ancora. Per una persona sola usa +1 e +5 nell'elenco qui sopra.</small>
+        </label>
+        <p><button class="pulsante secondario piccolo" id="salva-scatti" type="button">Salva gli scatti</button></p>
+
+        <fieldset class="campo" style="margin-top:24px">
+          <span>Chi vede le foto dopo lo sviluppo</span>
+          <div class="scelte">
+            <label><input type="radio" name="galleria-pannello" value="tutti"><span>Tutti gli invitati</span></label>
+            <label><input type="radio" name="galleria-pannello" value="solo-io"><span>Solo io</span></label>
+          </div>
+        </fieldset>
+      </div>
+
+      <div class="pannello">
+        <h2 class="titolo-medio">Le foto</h2>
+        <p class="testo-tenue">Prima dello sviluppo le vedi solo tu. Puoi cancellare quelle venute male o fuori luogo.</p>
+        <div class="fila-pulsanti">
+          <button class="pulsante secondario piccolo" id="mostra-foto" type="button">Mostra le foto</button>
+          <button class="pulsante secondario piccolo" id="scarica-zip" type="button">Scarica tutte (zip)</button>
+        </div>
+        <div class="griglia-organizzatore" id="griglia-organizzatore"></div>
+      </div>
+
+      <p class="nota">
+        <a href="#" id="altra-festa">Crea un'altra festa</a> oppure
+        <a href="#" id="dimentica-festa">togli questa festa da questo dispositivo</a>.
+      </p>
+    </div>
+  </section>
+
+  <!-- Il cartello: a schermo intero su un PC o una TV, oppure stampato -->
+  <div class="cartello" id="cartello" hidden>
+    <button class="chiudi chiudi-cartello" id="chiudi-cartello" type="button" aria-label="Chiudi">✕</button>
+    <h1 id="cartello-nome"></h1>
+    <div class="qr" id="cartello-qr"></div>
+    <p><strong>Inquadra il codice con la fotocamera del telefono</strong></p>
+    <p id="cartello-regole"></p>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+  <script src="impostazioni.js"></script>
+  <script src="comune.js"></script>
+  <script src="organizzatore.js"></script>
+</body>
+</html>
