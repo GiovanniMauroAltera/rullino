@@ -386,8 +386,9 @@ async function modifica(parametri, messaggioRiuscito) {
 }
 
 async function sviluppaAdesso() {
-  const ok = confirm("Sviluppare adesso? Il rullino si chiude per tutti e gli invitati vedranno subito le foto.");
-  if (!ok) {
+  const confermato = confermaConDoppioTocco(prendi("sviluppa-adesso"), "Tocca ancora: si sviluppa per tutti",
+    "Il rullino si chiude per tutti e gli invitati vedranno subito le foto.");
+  if (!confermato) {
     return;
   }
   const fatto = await modifica({ p_rivela_adesso: true }, "Foto sviluppate!");
@@ -404,8 +405,9 @@ async function salvaData() {
   }
   const data = new Date(valore);
   if (data.getTime() <= Date.now()) {
-    const ok = confirm("Quell'orario è già passato: le foto si sviluppano subito. Va bene?");
-    if (!ok) {
+    const confermato = confermaConDoppioTocco(prendi("salva-data"), "Tocca ancora: si sviluppa subito",
+      "Quell'orario è già passato: le foto si sviluppano subito.");
+    if (!confermato) {
       return;
     }
   }
@@ -515,7 +517,7 @@ function creaRiquadroFoto(griglia, foto) {
   elimina.textContent = "✕";
   elimina.setAttribute("aria-label", "Cancella la foto di " + foto.nome);
   elimina.addEventListener("click", function () {
-    eliminaFoto(foto, riquadro);
+    eliminaFoto(foto, riquadro, elimina);
   });
   riquadro.appendChild(elimina);
 
@@ -523,9 +525,10 @@ function creaRiquadroFoto(griglia, foto) {
   return immagine;
 }
 
-async function eliminaFoto(foto, riquadro) {
-  const ok = confirm("Cancellare questa foto di " + foto.nome + "? Non si può annullare.");
-  if (!ok) {
+async function eliminaFoto(foto, riquadro, pulsante) {
+  const confermato = confermaConDoppioTocco(pulsante, "Elimina?",
+    "Tocca ancora per cancellare la foto di " + foto.nome + ". Non si può annullare.");
+  if (!confermato) {
     return;
   }
   try {
@@ -648,9 +651,10 @@ function vaiAdApri(evento) {
 
 function dimenticaFesta(evento) {
   evento.preventDefault();
-  const ok = confirm("Togliere la festa da questo dispositivo? La festa e le foto restano: potrai riaprirla con il codice della festa (" +
-    organizzatore.festa + ") e il tuo codice segreto.");
-  if (!ok) {
+  const confermato = confermaConDoppioTocco(evento.currentTarget, "tocca ancora per toglierla",
+    "La festa e le foto restano: potrai riaprirla con il codice della festa (" + organizzatore.festa +
+    ") e il tuo codice segreto.");
+  if (!confermato) {
     return;
   }
   cancellaMemoria("rullino_organizzatore");

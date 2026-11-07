@@ -927,8 +927,9 @@ async function scaricaTutte() {
   const pulsante = prendi("scarica-tutte");
   const megabyte = Math.round(elencoFoto.length * 0.25);
   if (navigator.maxTouchPoints > 0 && elencoFoto.length > 30) {
-    const ok = confirm("Sono " + elencoFoto.length + " foto (circa " + megabyte + " MB). Meglio farlo con il Wi-Fi. Continuo?");
-    if (!ok) {
+    const confermato = confermaConDoppioTocco(pulsante, "Tocca ancora per scaricarle",
+      "Sono " + elencoFoto.length + " foto (circa " + megabyte + " MB): meglio farlo con il Wi-Fi.");
+    if (!confermato) {
       return;
     }
   }

@@ -124,6 +124,42 @@ function mostraAvviso(testo) {
 }
 
 
+// Chiede conferma dentro la pagina, senza le finestrelle del browser
+// (alcuni browser, come quelli dentro Instagram o WhatsApp, le bloccano
+// e rispondono "no" da soli). Il primo tocco cambia la scritta del pulsante
+// e, se c'è, mostra una spiegazione; un secondo tocco entro 5 secondi conferma.
+// Restituisce true solo al secondo tocco.
+function confermaConDoppioTocco(pulsante, testoConferma, spiegazione) {
+  if (pulsante.dataset.inAttesa === "si") {
+    clearTimeout(Number(pulsante.dataset.timer));
+    rimettiPulsante(pulsante);
+    return true;
+  }
+  pulsante.dataset.testoOriginale = pulsante.textContent;
+  pulsante.dataset.inAttesa = "si";
+  pulsante.textContent = testoConferma;
+  pulsante.classList.add("da-confermare");
+  if (spiegazione) {
+    mostraAvviso(spiegazione);
+  }
+  const timer = setTimeout(function () {
+    rimettiPulsante(pulsante);
+  }, 5000);
+  pulsante.dataset.timer = String(timer);
+  return false;
+}
+
+// Riporta il pulsante com'era prima della richiesta di conferma
+function rimettiPulsante(pulsante) {
+  if (pulsante.dataset.inAttesa !== "si") {
+    return;
+  }
+  pulsante.dataset.inAttesa = "";
+  pulsante.textContent = pulsante.dataset.testoOriginale;
+  pulsante.classList.remove("da-confermare");
+}
+
+
 // ---------- Memoria del telefono (localStorage) ----------
 // Se il browser non la permette (navigazione privata), l'app funziona lo stesso.
 
