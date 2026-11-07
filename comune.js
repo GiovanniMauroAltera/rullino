@@ -418,11 +418,23 @@ function nomeFileFoto(nome, testoData, numero) {
   return finale + ".jpg";
 }
 
-// Sul telefono apre il menu "Condividi" (da lì si salva nella galleria),
-// sul computer scarica il file
+// Salva una foto sul dispositivo:
+// - su Android la scarica direttamente (finisce nella galleria, cartella
+//   Download), perché lì il menu "Condividi" spesso non ha "Salva";
+// - su iPhone e iPad apre il menu "Condividi", dove c'è "Salva immagine"
+//   che la mette nell'app Foto;
+// - sul computer scarica il file.
 async function salvaFoto(base64, nomeFile) {
   const blob = blobDaBase64(base64);
+  const suAndroid = navigator.userAgent.indexOf("Android") !== -1;
   const suTelefono = navigator.maxTouchPoints > 0;
+
+  if (suAndroid) {
+    scaricaBlob(blob, nomeFile);
+    mostraAvviso("Foto scaricata: la trovi nella galleria, nella cartella Download");
+    return;
+  }
+
   if (suTelefono && navigator.canShare && window.File) {
     const file = new File([blob], nomeFile, { type: "image/jpeg" });
     if (navigator.canShare({ files: [file] })) {
