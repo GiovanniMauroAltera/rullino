@@ -381,10 +381,11 @@ function scriviSuCanvasDisplay(canvas, testo, altezza, colore) {
   disegnaDisplay(ctx, testo, altezza * 0.1, altezza * 0.05, altezza, colore, null);
 }
 
-// La data come la stampano le macchinette: '26 11 07
+// La data come la stampano le macchinette, in ordine italiano
+// (giorno, mese, anno): 07 11 '26
 function testoData(data) {
   const anno = String(data.getFullYear()).substring(2);
-  return "'" + anno + " " + dueCifre(data.getMonth() + 1) + " " + dueCifre(data.getDate());
+  return dueCifre(data.getDate()) + " " + dueCifre(data.getMonth() + 1) + " '" + anno;
 }
 
 
