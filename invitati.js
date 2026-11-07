@@ -5,7 +5,7 @@
 // =====================================================================
 
 const SCATTI_LATO_LUNGO = 1600;     // grandezza massima delle foto (in pixel)
-const MINIATURA_LATO_LUNGO = 420;   // grandezza delle foto piccole della galleria
+const MINIATURA_LATO_LUNGO = 360;   // grandezza delle foto piccole della galleria (leggere, per risparmiare traffico)
 const COLORE_LED = "#ff8a1f";
 
 let idFesta = "";
@@ -491,7 +491,7 @@ function sviluppaFoto(tela, filtro, scattataIl) {
   piccola.width = Math.round(w * scalaPiccola);
   piccola.height = Math.round(h * scalaPiccola);
   piccola.getContext("2d").drawImage(tela, 0, 0, piccola.width, piccola.height);
-  const miniatura = piccola.toDataURL("image/jpeg", 0.72).split(",")[1];
+  const miniatura = piccola.toDataURL("image/jpeg", 0.65).split(",")[1];
 
   // 3. in coda per l'invio
   const foto = {
@@ -810,15 +810,19 @@ async function apriGalleria() {
   aggiornaPulsanteTorna();
   await aggiornaGalleria(true);
 
-  // con "foto subito" le foto nuove compaiono da sole ogni 20 secondi
+  // con "foto subito" le foto nuove compaiono da sole ogni 30 secondi
   clearInterval(timerGalleria);
   if (festa.foto_subito) {
-    timerGalleria = setInterval(aggiornaGalleriaSeVisibile, 20000);
+    timerGalleria = setInterval(aggiornaGalleriaSeVisibile, 30000);
   }
 }
 
 function aggiornaGalleriaSeVisibile() {
-  // non si aggiorna mentre si guarda una foto a schermo intero
+  // non si aggiorna mentre si guarda una foto a schermo intero, né quando
+  // il telefono è bloccato o la pagina è dietro un'altra app (traffico inutile)
+  if (document.hidden) {
+    return;
+  }
   if (!prendi("galleria").hidden && prendi("visore").hidden) {
     aggiornaGalleria(false);
   }
@@ -910,7 +914,6 @@ async function aggiornaGalleria(primaVolta) {
     vuota.hidden = false;
     prendi("filtri").hidden = true;
     prendi("griglia").innerHTML = "";
-    prendi("scarica-tutte").hidden = true;
     return;
   }
   vuota.hidden = true;
@@ -943,8 +946,6 @@ async function aggiornaGalleria(primaVolta) {
   creaFiltri(nomi, perPersona);
   creaGriglia();
   scegliFiltro(filtroAttivo);
-  prendi("scarica-tutte").hidden = false;
-  caricaMiniature();
 }
 
 function confrontaNomi(primo, secondo) {
@@ -1004,6 +1005,10 @@ function segnaFiltri() {
 
 function creaGriglia() {
   const griglia = prendi("griglia");
+  // le stampe vecchie stanno per essere rifatte: non vanno più osservate
+  if (osservatore !== null) {
+    osservatore.disconnect();
+  }
   griglia.innerHTML = "";
   for (let i = 0; i < elencoFoto.length; i++) {
     const foto = elencoFoto[i];
@@ -1027,36 +1032,75 @@ function creaGriglia() {
     didascalia.appendChild(quando);
     stampa.appendChild(didascalia);
 
-    // se la miniatura era già arrivata (galleria aggiornata) si mostra subito,
-    // già sviluppata, senza scaricarla di nuovo
-    if (miniatureCaricate[foto.id]) {
-      immagine.src = indirizzoImmagine(miniatureCaricate[foto.id]);
-      stampa.classList.add("sviluppata");
-    }
-
     stampa.addEventListener("click", function () {
       apriVisore(foto.id);
     });
     elementiStampa[foto.id] = stampa;
     griglia.appendChild(stampa);
+
+    if (miniatureCaricate[foto.id]) {
+      // già arrivata (galleria aggiornata): si mostra subito, senza riscaricarla
+      immagine.src = indirizzoImmagine(miniatureCaricate[foto.id]);
+      stampa.classList.add("sviluppata");
+    } else if (!miniatureChieste[foto.id]) {
+      // si scaricherà solo quando arriva vicino allo schermo
+      osservaStampa(stampa, foto.id);
+    }
   }
 }
 
-// Le miniature arrivano a gruppi di 30, e ognuna "si sviluppa" appena è pronta.
-// Si chiedono solo quelle che non sono ancora arrivate.
-async function caricaMiniature() {
-  const mancanti = [];
-  for (let i = 0; i < elencoFoto.length; i++) {
-    if (!miniatureCaricate[elencoFoto[i].id]) {
-      mancanti.push(elencoFoto[i].id);
-    }
+// ---------- Miniature scaricate solo quando servono ----------
+// Per risparmiare traffico (il piano gratuito ne ha 5 GB al mese) una
+// miniatura si scarica solo quando la sua foto sta per comparire sullo
+// schermo, mentre si scorre. Così chi guarda solo le prime foto non
+// scarica tutte le altre.
+
+let osservatore = null;          // il "guardiano" che avvisa quando una foto entra nello schermo
+let daScaricare = [];            // le miniature in fila per essere chieste
+let timerScarica = null;
+const miniatureChieste = {};     // id già chiesti, per non chiederli due volte
+
+function osservaStampa(stampa, id) {
+  stampa.dataset.id = id;
+  // i browser molto vecchi non hanno il "guardiano": lì si scarica tutto subito
+  if (!("IntersectionObserver" in window)) {
+    mettiInFila(id);
+    return;
   }
-  const gruppo = 30;
-  for (let inizio = 0; inizio < mancanti.length; inizio = inizio + gruppo) {
-    const ids = [];
-    for (let i = inizio; i < inizio + gruppo && i < mancanti.length; i++) {
-      ids.push(mancanti[i]);
+  if (osservatore === null) {
+    // 800 pixel di anticipo: la miniatura arriva poco prima di essere vista
+    osservatore = new IntersectionObserver(quandoEntraNelloSchermo, { rootMargin: "800px 0px" });
+  }
+  osservatore.observe(stampa);
+}
+
+function quandoEntraNelloSchermo(voci) {
+  for (let i = 0; i < voci.length; i++) {
+    if (!voci[i].isIntersecting) {
+      continue;
     }
+    osservatore.unobserve(voci[i].target);
+    mettiInFila(voci[i].target.dataset.id);
+  }
+}
+
+function mettiInFila(id) {
+  if (miniatureCaricate[id] || miniatureChieste[id]) {
+    return;
+  }
+  miniatureChieste[id] = true;
+  daScaricare.push(id);
+  // si aspetta un attimo, così le foto che entrano insieme partono in una sola richiesta
+  if (timerScarica === null) {
+    timerScarica = setTimeout(scaricaMiniatureInFila, 120);
+  }
+}
+
+// Chiede le miniature in fila, a gruppi di 30, e ognuna "si sviluppa" appena è pronta
+async function scaricaMiniatureInFila() {
+  timerScarica = null;
+  while (daScaricare.length > 0) {
+    const ids = daScaricare.splice(0, 30);
     let risposta = null;
     for (let tentativo = 1; tentativo <= 3 && risposta === null; tentativo++) {
       try {
@@ -1066,6 +1110,13 @@ async function caricaMiniature() {
       }
     }
     if (risposta === null) {
+      // non sono arrivate: si potranno richiedere quando la foto torna nello schermo
+      for (let i = 0; i < ids.length; i++) {
+        delete miniatureChieste[ids[i]];
+        if (elementiStampa[ids[i]]) {
+          osservaStampa(elementiStampa[ids[i]], ids[i]);
+        }
+      }
       continue;
     }
     for (let j = 0; j < risposta.length; j++) {
@@ -1086,28 +1137,6 @@ function mostraMiniatura(stampa, base64, ritardo) {
     }, ritardo);
   };
   immagine.src = indirizzoImmagine(base64);
-}
-
-async function scaricaTutte() {
-  const pulsante = prendi("scarica-tutte");
-  const megabyte = Math.round(elencoFoto.length * 0.25);
-  if (navigator.maxTouchPoints > 0 && elencoFoto.length > 30) {
-    const confermato = confermaConDoppioTocco(pulsante, "Tocca ancora per scaricarle",
-      "Sono " + elencoFoto.length + " foto (circa " + megabyte + " MB): meglio farlo con il Wi-Fi.");
-    if (!confermato) {
-      return;
-    }
-  }
-  pulsante.disabled = true;
-  try {
-    await scaricaTutteZip(idFesta, festa.nome, elencoFoto, null, function (testo) {
-      pulsante.textContent = testo;
-    });
-  } catch (errore) {
-    mostraAvviso(errore.message);
-  }
-  pulsante.disabled = false;
-  pulsante.textContent = "Scarica tutte le foto (zip)";
 }
 
 
@@ -1251,7 +1280,6 @@ function collegaPulsanti() {
   prendi("gira-lato").addEventListener("click", giraFotocamera);
   prendi("pulsante-piano-b").addEventListener("click", apriFotocameraTelefono);
   prendi("file-piano-b").addEventListener("change", fotoDalTelefono);
-  prendi("scarica-tutte").addEventListener("click", scaricaTutte);
   // con "foto subito": dalla macchinetta alla galleria e ritorno
   prendi("vai-galleria").addEventListener("click", apriGalleria);
   prendi("benvenuto-galleria").addEventListener("click", apriGalleria);

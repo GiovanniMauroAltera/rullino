@@ -8,7 +8,7 @@ Niente app da scaricare: si inquadra un QR code, si scrive il proprio nome e si 
 - **Chi organizza** crea la festa dalla pagina `organizza.html`: sceglie il nome, quanti scatti ha ogni invitato, quando si sviluppano le foto e chi potrà vederle. La pagina crea un QR code da stampare o da mostrare su uno schermo.
 - **Gli invitati** inquadrano il QR code con la fotocamera del telefono, scrivono il nome e hanno la loro macchinetta. Dopo lo scatto non si può rivedere la foto: ogni scatto è definitivo, e il contatore arancione scende come su una macchinetta vera.
 - **I filtri:** prima di scattare si sceglie tra *Originale*, *Usa e getta* (colori caldi e sbiaditi, grana, angoli scuri e ogni tanto un po' di luce entrata nel rullino), *Digitale* (colori accesi e freddi, tanto contrasto, come una compattina dei primi anni 2000) e *Bianco e nero*. Nel mirino si vede già l'effetto, e il telefono ricorda l'ultimo filtro scelto.
-- **Due modi di vedere le foto.** Con lo sviluppo a un orario, le foto restano nascoste a tutti fino a quell'ora. A quell'ora compaiono tutte insieme nella galleria, con il nome di chi le ha scattate. Si possono guardare persona per persona e salvare una alla volta oppure tutte in uno zip.
+- **Due modi di vedere le foto.** Con lo sviluppo a un orario, le foto restano nascoste a tutti fino a quell'ora. A quell'ora compaiono tutte insieme nella galleria, con il nome di chi le ha scattate. Si possono guardare persona per persona e salvare una alla volta. Lo zip con tutte le foto lo scarica solo chi organizza, dal pannello, per non consumare il traffico gratuito.
 - **Foto subito:** in alternativa ogni foto compare nella galleria di tutti appena scattata, durante la festa. Gli invitati la aprono con "Guarda le foto" dalla macchinetta, la galleria si aggiorna da sola e il rullino resta aperto finché ci sono scatti. Si sceglie quando si crea la festa e si può cambiare dal pannello.
 - **L'organizzatore** può guardare e cancellare le foto in qualsiasi momento, sviluppare prima del previsto, spostare l'orario e regalare altri scatti, a tutti o a una persona sola (con +1 e +5 accanto al suo nome).
 
@@ -47,5 +47,6 @@ Servono due servizi gratuiti: **Supabase**, che conserva le foto, e **GitHub Pag
 
 ## Limiti del piano gratuito di Supabase
 
-- 500 MB di spazio, cioè circa 1.200–1.800 foto, a seconda di quanto si usano i filtri. Lo spazio usato si vede nel pannello.
+- 500 MB di spazio: ogni foto con la sua miniatura pesa circa 0,35–0,4 MB, quindi ci stanno circa 1.100 foto. Con 75 invitati vuol dire al massimo 12–14 scatti a testa. Lo spazio usato si vede nel pannello.
+- 5 GB al mese di traffico (i dati che il database manda ai telefoni). Per risparmiarlo le miniature della galleria si scaricano solo quando si scorre fino a loro, pesano circa 8 KB l'una, e lo zip lo scarica solo chi organizza.
 - Se il progetto resta fermo per una settimana, Supabase lo mette in pausa: si riattiva dal sito con un clic. Conviene comunque scaricare lo zip con tutte le foto entro qualche giorno dalla festa.
