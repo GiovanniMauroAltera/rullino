@@ -29,8 +29,22 @@ async function avvia() {
   }
 
   organizzatore = leggiMemoria("rullino_organizzatore");
-  if (organizzatore) {
+
+  // si arriva dalla pagina degli invitati con il codice della festa (?f=...)
+  const parametri = new URLSearchParams(location.search);
+  let festaRichiesta = parametri.get("f");
+  if (festaRichiesta) {
+    festaRichiesta = festaRichiesta.trim().toLowerCase();
+  }
+
+  if (organizzatore && (!festaRichiesta || festaRichiesta === organizzatore.festa)) {
+    // questo dispositivo conosce già la festa: si apre subito il pannello
     await apriPannello();
+  } else if (festaRichiesta) {
+    // altrimenti si chiede solo il codice segreto, con il codice della festa già scritto
+    prendi("apri-festa").value = festaRichiesta;
+    mostraSchermata("apri");
+    prendi("apri-codice").focus();
   } else {
     mostraSchermata("crea");
   }

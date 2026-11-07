@@ -78,6 +78,7 @@ async function caricaFesta() {
   idFesta = festa.festa;
   differenzaOrologio = new Date(festa.adesso).getTime() - Date.now();
   document.title = festa.nome + " – Rullino";
+  preparaLinkOrganizzatore();
 
   // rullino chiuso: le foto sono sviluppate e non si scatta più
   if (rullinoChiuso()) {
@@ -119,6 +120,15 @@ async function caricaFesta() {
     apriFotocamera();
   } else {
     mostraAttesa();
+  }
+}
+
+// I collegamenti "Apri il pannello" portano alla pagina dell'organizzatore
+// con il codice di questa festa già scritto (serve comunque il codice segreto)
+function preparaLinkOrganizzatore() {
+  const collegamenti = document.querySelectorAll(".link-organizzatore a");
+  for (let i = 0; i < collegamenti.length; i++) {
+    collegamenti[i].href = "organizza.html?f=" + idFesta;
   }
 }
 
