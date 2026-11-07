@@ -41,6 +41,11 @@ create table if not exists ospiti (
 -- (Aggiunta dopo: "if not exists" la crea anche nei database già fatti.)
 alter table ospiti add column if not exists scatti_extra int not null default 0;
 
+-- "Foto subito": ogni foto si vede nella galleria appena scattata e il
+-- rullino resta aperto (invece di aspettare l'ora dello sviluppo).
+-- (Aggiunta dopo, come scatti_extra.)
+alter table feste add column if not exists foto_subito boolean not null default false;
+
 -- Una riga per ogni foto (l'immagine grande e una piccola per la galleria)
 create table if not exists foto (
   id uuid primary key,
@@ -130,7 +135,8 @@ begin
   if codice_giusto(f.id, p_codice) then
     return f;
   end if;
-  if now() < f.rivela_alle then
+  -- con "foto subito" le foto si vedono appena scattate, senza aspettare
+  if not f.foto_subito and now() < f.rivela_alle then
     raise exception 'Le foto non sono ancora state sviluppate';
   end if;
   if not f.galleria_per_tutti then
@@ -155,6 +161,10 @@ $$;
 -- Funzioni per l'organizzatore
 -- ---------------------------------------------------------------------
 
+-- La versione vecchia di crea_festa (senza "foto subito") va tolta,
+-- altrimenti ne resterebbero due con lo stesso nome e il sito non saprebbe quale usare
+drop function if exists crea_festa(text, int, timestamptz, boolean, boolean, text);
+
 -- Crea una festa nuova e restituisce il suo codice corto
 create or replace function crea_festa(
   p_nome text,
@@ -162,7 +172,8 @@ create or replace function crea_festa(
   p_rivela_alle timestamptz,
   p_galleria_per_tutti boolean,
   p_data_sulle_foto boolean,
-  p_codice text
+  p_codice text,
+  p_foto_subito boolean default false
 )
 returns json
 language plpgsql
@@ -198,10 +209,10 @@ begin
     exit when not exists (select 1 from feste where id = nuovo_id);
   end loop;
 
-  insert into feste (id, nome, scatti_per_ospite, rivela_alle, galleria_per_tutti, data_sulle_foto, codice_hash)
+  insert into feste (id, nome, scatti_per_ospite, rivela_alle, galleria_per_tutti, data_sulle_foto, codice_hash, foto_subito)
   values (nuovo_id, p_nome, p_scatti, p_rivela_alle,
           coalesce(p_galleria_per_tutti, true), coalesce(p_data_sulle_foto, true),
-          calcola_hash(nuovo_id, p_codice));
+          calcola_hash(nuovo_id, p_codice), coalesce(p_foto_subito, false));
 
   return json_build_object('festa', nuovo_id);
 end;
@@ -249,6 +260,7 @@ begin
     'rivelata', now() >= f.rivela_alle,
     'galleria_per_tutti', f.galleria_per_tutti,
     'data_sulle_foto', f.data_sulle_foto,
+    'foto_subito', f.foto_subito,
     'adesso', now(),
     'numero_foto', (select count(*) from foto where festa_id = f.id),
     'ospiti', elenco_ospiti,
@@ -257,6 +269,9 @@ begin
 end;
 $$;
 
+-- Anche la versione vecchia di modifica_festa va tolta (vedi crea_festa)
+drop function if exists modifica_festa(text, text, boolean, timestamptz, boolean, int);
+
 -- Cambia le regole della festa (i valori lasciati vuoti restano come prima)
 create or replace function modifica_festa(
   p_festa text,
@@ -264,7 +279,8 @@ create or replace function modifica_festa(
   p_rivela_adesso boolean default false,
   p_rivela_alle timestamptz default null,
   p_galleria_per_tutti boolean default null,
-  p_scatti int default null
+  p_scatti int default null,
+  p_foto_subito boolean default null
 )
 returns json
 language plpgsql
@@ -292,6 +308,9 @@ begin
   end if;
   if p_scatti is not null then
     update feste set scatti_per_ospite = p_scatti where id = f.id;
+  end if;
+  if p_foto_subito is not null then
+    update feste set foto_subito = p_foto_subito where id = f.id;
   end if;
 
   return json_build_object('ok', true);
@@ -373,6 +392,7 @@ begin
     'rivelata', now() >= f.rivela_alle,
     'galleria_per_tutti', f.galleria_per_tutti,
     'data_sulle_foto', f.data_sulle_foto,
+    'foto_subito', f.foto_subito,
     'adesso', now(),
     'numero_ospiti', (select count(*) from ospiti where festa_id = f.id),
     'numero_foto', (select count(*) from foto where festa_id = f.id)
@@ -476,7 +496,8 @@ begin
 
   -- Dopo lo sviluppo il rullino è chiuso. Lasciamo un'ora di tempo solo
   -- alle foto scattate prima, rimaste nel telefono per mancanza di rete.
-  if now() >= f.rivela_alle then
+  -- Con "foto subito" invece il rullino resta aperto finché ci sono scatti.
+  if not f.foto_subito and now() >= f.rivela_alle then
     if p_scattata_il is null or p_scattata_il >= f.rivela_alle or now() > f.rivela_alle + interval '1 hour' then
       raise exception 'Il rullino è chiuso: le foto sono già state sviluppate';
     end if;
@@ -596,9 +617,9 @@ revoke execute on function controlla_permesso_foto(text, text) from public, anon
 revoke execute on function in_base64(bytea) from public, anon, authenticated;
 
 -- Queste invece sì
-grant execute on function crea_festa(text, int, timestamptz, boolean, boolean, text) to anon, authenticated;
+grant execute on function crea_festa(text, int, timestamptz, boolean, boolean, text, boolean) to anon, authenticated;
 grant execute on function pannello_organizzatore(text, text) to anon, authenticated;
-grant execute on function modifica_festa(text, text, boolean, timestamptz, boolean, int) to anon, authenticated;
+grant execute on function modifica_festa(text, text, boolean, timestamptz, boolean, int, boolean) to anon, authenticated;
 grant execute on function regala_scatti(text, text, text, int) to anon, authenticated;
 grant execute on function elimina_foto(text, text, text) to anon, authenticated;
 grant execute on function info_festa(text) to anon, authenticated;

@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Quintessential&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="stile.css?v=3">
+  <link rel="stylesheet" href="stile.css?v=4">
 </head>
 <body class="organizza">
 
@@ -53,9 +53,10 @@
             <label><input type="radio" name="sviluppo" value="domani10" checked><span id="etichetta-domani10">Domani alle 10:00</span></label>
             <label><input type="radio" name="sviluppo" value="domani13"><span id="etichetta-domani13">Domani alle 13:00</span></label>
             <label><input type="radio" name="sviluppo" value="scelgo"><span>Scelgo io</span></label>
+            <label><input type="radio" name="sviluppo" value="subito"><span>Subito, appena scattate</span></label>
           </div>
           <input class="inserimento" id="crea-data" type="datetime-local" style="margin-top:10px" hidden>
-          <small>Fino ad allora le foto non le vede nessuno. Puoi sempre premere "Sviluppa adesso".</small>
+          <small>Con un orario, fino ad allora le foto non le vede nessuno (puoi sempre premere "Sviluppa adesso"). Con "Subito" ogni foto compare nella galleria di tutti appena scattata, durante la festa.</small>
         </fieldset>
 
         <fieldset class="campo">
@@ -147,16 +148,29 @@
 
       <div class="pannello">
         <h2 class="titolo-medio">Lo sviluppo</h2>
-        <p class="testo-tenue" id="sviluppo-testo"></p>
-        <div class="display-grande"><canvas id="display-sviluppo" aria-hidden="true"></canvas></div>
-        <p><button class="pulsante" id="sviluppa-adesso" type="button">Sviluppa adesso</button></p>
-
         <div class="messaggio-errore" id="errore-modifiche" hidden></div>
-        <label class="campo">
-          <span>Cambia l'orario dello sviluppo</span>
-          <input class="inserimento" id="nuova-data" type="datetime-local">
-        </label>
-        <p><button class="pulsante secondario piccolo" id="salva-data" type="button">Salva l'orario</button></p>
+
+        <fieldset class="campo">
+          <span>Quando si vedono le foto</span>
+          <div class="scelte">
+            <label><input type="radio" name="modo-pannello" value="subito"><span>Subito, appena scattate</span></label>
+            <label><input type="radio" name="modo-pannello" value="orario"><span>All'orario dello sviluppo</span></label>
+          </div>
+        </fieldset>
+
+        <p class="testo-tenue" id="testo-subito" hidden>Ogni foto compare nella galleria di tutti appena scattata, e il rullino resta aperto finché ci sono scatti. Gli invitati la vedono con "Guarda le foto" nella macchinetta.</p>
+
+        <!-- questa parte serve solo con lo sviluppo a un orario -->
+        <div id="parte-orario">
+          <p class="testo-tenue" id="sviluppo-testo"></p>
+          <div class="display-grande"><canvas id="display-sviluppo" aria-hidden="true"></canvas></div>
+          <p><button class="pulsante" id="sviluppa-adesso" type="button">Sviluppa adesso</button></p>
+          <label class="campo">
+            <span>Cambia l'orario dello sviluppo</span>
+            <input class="inserimento" id="nuova-data" type="datetime-local">
+          </label>
+          <p><button class="pulsante secondario piccolo" id="salva-data" type="button">Salva l'orario</button></p>
+        </div>
 
         <label class="campo" style="margin-top:24px">
           <span>Scatti a testa</span>
@@ -201,8 +215,8 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-  <script src="impostazioni.js?v=3"></script>
-  <script src="comune.js?v=3"></script>
-  <script src="organizzatore.js?v=3"></script>
+  <script src="impostazioni.js?v=4"></script>
+  <script src="comune.js?v=4"></script>
+  <script src="organizzatore.js?v=4"></script>
 </body>
 </html>

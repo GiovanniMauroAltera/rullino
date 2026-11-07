@@ -27,6 +27,7 @@ let filtroFoto = "originale";  // il filtro scelto (vedi filtri.js)
 // i timer
 let timerConto = null;
 let timerControllo = null;
+let timerGalleria = null;      // con "foto subito" la galleria si aggiorna da sola
 
 // la galleria
 let elencoFoto = [];
@@ -78,7 +79,8 @@ async function caricaFesta() {
   differenzaOrologio = new Date(festa.adesso).getTime() - Date.now();
   document.title = festa.nome + " – Rullino";
 
-  if (festa.rivelata) {
+  // rullino chiuso: le foto sono sviluppate e non si scatta più
+  if (rullinoChiuso()) {
     apriGalleria();
     return;
   }
@@ -128,6 +130,12 @@ function mostraProblema(titolo, testo, conRiprova, conOrganizza) {
   mostraSchermata("problema");
 }
 
+// Il rullino è chiuso quando le foto si sviluppano a un orario e quell'orario
+// è passato. Con "foto subito" invece resta aperto finché ci sono scatti.
+function rullinoChiuso() {
+  return festa.rivelata && !festa.foto_subito;
+}
+
 // Gli scatti che si possono ancora fare, contando anche le foto in viaggio
 function scattiDisponibili() {
   let disponibili = scattiRimasti - coda.length;
@@ -143,9 +151,18 @@ function scattiDisponibili() {
 // ---------------------------------------------------------------------
 
 function mostraBenvenuto() {
+  clearInterval(timerGalleria);
   prendi("benvenuto-nome-festa").textContent = festa.nome;
-  prendi("benvenuto-regole").textContent = "Hai " + festa.scatti_per_ospite + " scatti. Le foto si sviluppano " +
-    quandoInParole(festa.rivela_alle) + ", tutte insieme.";
+  const regole = "Hai " + festa.scatti_per_ospite + " scatti. ";
+  if (festa.foto_subito) {
+    prendi("benvenuto-regole").textContent = regole + "Ogni foto compare subito nella galleria di tutti, appena scattata.";
+    prendi("benvenuto-nota").textContent = "Niente anteprima e niente seconde possibilità: ogni scatto è definitivo.";
+  } else {
+    prendi("benvenuto-regole").textContent = regole + "Le foto si sviluppano " + quandoInParole(festa.rivela_alle) + ", tutte insieme.";
+    prendi("benvenuto-nota").textContent = "Niente anteprima e niente seconde possibilità: ogni scatto è definitivo. Le foto restano nascoste a tutti fino allo sviluppo.";
+  }
+  // con "foto subito" si può dare un'occhiata alla galleria anche prima di entrare
+  prendi("benvenuto-galleria").hidden = !(festa.foto_subito && festa.galleria_per_tutti);
   mostraSchermata("benvenuto");
 }
 
@@ -183,7 +200,10 @@ async function entra(evento) {
 // ---------------------------------------------------------------------
 
 function apriFotocamera() {
+  clearInterval(timerGalleria);
   prendi("fotocamera-nome-festa").textContent = festa.nome;
+  // con "foto subito" dalla macchinetta si può andare alla galleria
+  prendi("vai-galleria").hidden = !(festa.foto_subito && festa.galleria_per_tutti);
   mostraSchermata("fotocamera");
   aggiornaContatore();
   aggiornaIndicatoreInvio();
@@ -645,8 +665,14 @@ function aggiornaIndicatoreInvio() {
 // ---------------------------------------------------------------------
 
 function mostraAttesa() {
-  // se nel frattempo è arrivata la galleria, non si torna indietro
-  if (!prendi("galleria").hidden) {
+  // se il rullino è chiuso e c'è già la galleria, non si torna indietro
+  if (!prendi("galleria").hidden && rullinoChiuso()) {
+    return;
+  }
+  // con "foto subito" non c'è niente da aspettare: si va alle foto di tutti
+  if (festa.foto_subito) {
+    apriGalleria();
+    mostraAvviso("Hai finito il rullino: ecco le foto di tutti");
     return;
   }
   spegniFotocamera();
@@ -697,10 +723,27 @@ async function controllaFesta() {
   }
   festa = nuova;
   differenzaOrologio = new Date(festa.adesso).getTime() - Date.now();
+  const galleriaAperta = !prendi("galleria").hidden;
 
-  if (festa.rivelata) {
-    if (prendi("galleria").hidden) {
+  if (rullinoChiuso()) {
+    if (!galleriaAperta) {
       apriGalleria();
+    } else {
+      aggiornaPulsanteTorna();
+    }
+    return;
+  }
+
+  // l'organizzatore ha tolto "foto subito" mentre si guardava la galleria:
+  // le foto tornano nascoste e si torna alla macchinetta
+  if (galleriaAperta && !festa.foto_subito) {
+    clearInterval(timerGalleria);
+    if (!ospite) {
+      mostraBenvenuto();
+    } else if (scattiDisponibili() > 0) {
+      apriFotocamera();
+    } else {
+      mostraAttesa();
     }
     return;
   }
@@ -711,14 +754,18 @@ async function controllaFesta() {
     const primaDisponibili = scattiDisponibili();
     await aggiornaStatoOspite();
     aggiornaContatore();
+    const regalati = scattiDisponibili() > primaDisponibili;
     if (!prendi("attesa").hidden && scattiDisponibili() > 0) {
       // aveva finito il rullino: si torna alla macchinetta
       apriFotocamera();
       mostraAvviso("Ti hanno regalato altri scatti: la macchinetta è di nuovo carica!");
       return;
     }
-    if (!prendi("fotocamera").hidden && scattiDisponibili() > primaDisponibili) {
+    if (!prendi("fotocamera").hidden && regalati) {
       mostraAvviso("Ti hanno regalato altri scatti!");
+    }
+    if (galleriaAperta && regalati) {
+      mostraAvviso("Ti hanno regalato altri scatti: torna alla macchinetta!");
     }
   }
   if (!prendi("attesa").hidden) {
@@ -727,47 +774,136 @@ async function controllaFesta() {
   if (!prendi("benvenuto").hidden) {
     mostraBenvenuto();
   }
+  if (!prendi("fotocamera").hidden) {
+    prendi("vai-galleria").hidden = !(festa.foto_subito && festa.galleria_per_tutti);
+  }
+  if (galleriaAperta) {
+    aggiornaPulsanteTorna();
+  }
 }
 
 
 // ---------------------------------------------------------------------
-// La galleria, dopo lo sviluppo
+// La galleria: dopo lo sviluppo, oppure subito con "foto subito"
 // ---------------------------------------------------------------------
 
 async function apriGalleria() {
   spegniFotocamera();
   clearInterval(timerConto);
-  clearInterval(timerControllo);
+  // a rullino chiuso non serve più ricontrollare la festa; con "foto subito"
+  // invece sì (scatti regalati, cambi dell'organizzatore)
+  if (rullinoChiuso()) {
+    clearInterval(timerControllo);
+  }
   prendi("galleria-nome-festa").textContent = festa.nome;
   mostraSchermata("galleria");
+  aggiornaPulsanteTorna();
+  await aggiornaGalleria(true);
 
+  // con "foto subito" le foto nuove compaiono da sole ogni 20 secondi
+  clearInterval(timerGalleria);
+  if (festa.foto_subito) {
+    timerGalleria = setInterval(aggiornaGalleriaSeVisibile, 20000);
+  }
+}
+
+function aggiornaGalleriaSeVisibile() {
+  // non si aggiorna mentre si guarda una foto a schermo intero
+  if (!prendi("galleria").hidden && prendi("visore").hidden) {
+    aggiornaGalleria(false);
+  }
+}
+
+// Con "foto subito" e scatti ancora da fare, dalla galleria si torna alla macchinetta
+function aggiornaPulsanteTorna() {
+  const pulsante = prendi("torna-macchinetta");
+  if (!festa.foto_subito || rullinoChiuso()) {
+    pulsante.hidden = true;
+    return;
+  }
+  if (!ospite) {
+    pulsante.textContent = "Prendi la macchinetta";
+    pulsante.hidden = false;
+    return;
+  }
+  const disponibili = scattiDisponibili();
+  if (disponibili <= 0) {
+    pulsante.hidden = true;
+    return;
+  }
+  if (disponibili === 1) {
+    pulsante.textContent = "Torna alla macchinetta (1 scatto)";
+  } else {
+    pulsante.textContent = "Torna alla macchinetta (" + disponibili + " scatti)";
+  }
+  pulsante.hidden = false;
+}
+
+function tornaAllaMacchinetta() {
+  clearInterval(timerGalleria);
+  if (!ospite) {
+    mostraBenvenuto();
+    return;
+  }
+  apriFotocamera();
+}
+
+// Chiede l'elenco delle foto e ridisegna la galleria. Le miniature già
+// arrivate restano in memoria, così si scaricano solo quelle nuove.
+async function aggiornaGalleria(primaVolta) {
   const conteggio = prendi("galleria-conteggio");
   const vuota = prendi("galleria-vuota");
-  vuota.hidden = true;
 
   if (!festa.galleria_per_tutti) {
-    conteggio.textContent = "Le foto sono state sviluppate.";
+    if (festa.foto_subito) {
+      conteggio.textContent = "";
+    } else {
+      conteggio.textContent = "Le foto sono state sviluppate.";
+    }
     vuota.textContent = "Chi ha organizzato la festa ha scelto di tenere le foto per sé: le vede solo chi l'ha organizzata.";
     vuota.hidden = false;
     return;
   }
 
-  conteggio.textContent = "Sviluppo in corso…";
+  if (primaVolta) {
+    vuota.hidden = true;
+    if (festa.foto_subito) {
+      conteggio.textContent = "Carico le foto…";
+    } else {
+      conteggio.textContent = "Sviluppo in corso…";
+    }
+  }
+  let nuovoElenco;
   try {
-    elencoFoto = await chiamaDatabase("elenco_foto", { p_festa: idFesta });
+    nuovoElenco = await chiamaDatabase("elenco_foto", { p_festa: idFesta });
   } catch (errore) {
-    conteggio.textContent = "";
-    vuota.textContent = errore.message + ". Ricarica la pagina per riprovare.";
-    vuota.hidden = false;
+    if (primaVolta) {
+      conteggio.textContent = "";
+      vuota.textContent = errore.message + ". Ricarica la pagina per riprovare.";
+      vuota.hidden = false;
+    }
     return;
   }
+  // dal vivo le foto più nuove stanno in alto
+  if (festa.foto_subito) {
+    nuovoElenco.reverse();
+  }
+  elencoFoto = nuovoElenco;
 
   if (elencoFoto.length === 0) {
     conteggio.textContent = "";
-    vuota.textContent = "In questo rullino non c'è nessuna foto.";
+    if (festa.foto_subito) {
+      vuota.textContent = "Ancora nessuna foto: la prima che qualcuno scatta compare qui.";
+    } else {
+      vuota.textContent = "In questo rullino non c'è nessuna foto.";
+    }
     vuota.hidden = false;
+    prendi("filtri").hidden = true;
+    prendi("griglia").innerHTML = "";
+    prendi("scarica-tutte").hidden = true;
     return;
   }
+  vuota.hidden = true;
 
   // quante foto ha scattato ogni persona
   const perPersona = {};
@@ -790,8 +926,13 @@ async function apriGalleria() {
   }
   conteggio.textContent = testo;
 
+  // se la persona scelta non ha più foto (cancellate), si torna a "Tutti"
+  if (filtroAttivo !== null && perPersona[filtroAttivo] === undefined) {
+    filtroAttivo = null;
+  }
   creaFiltri(nomi, perPersona);
   creaGriglia();
+  scegliFiltro(filtroAttivo);
   prendi("scarica-tutte").hidden = false;
   caricaMiniature();
 }
@@ -876,6 +1017,13 @@ function creaGriglia() {
     didascalia.appendChild(quando);
     stampa.appendChild(didascalia);
 
+    // se la miniatura era già arrivata (galleria aggiornata) si mostra subito,
+    // già sviluppata, senza scaricarla di nuovo
+    if (miniatureCaricate[foto.id]) {
+      immagine.src = indirizzoImmagine(miniatureCaricate[foto.id]);
+      stampa.classList.add("sviluppata");
+    }
+
     stampa.addEventListener("click", function () {
       apriVisore(foto.id);
     });
@@ -884,13 +1032,20 @@ function creaGriglia() {
   }
 }
 
-// Le miniature arrivano a gruppi di 30, e ognuna "si sviluppa" appena è pronta
+// Le miniature arrivano a gruppi di 30, e ognuna "si sviluppa" appena è pronta.
+// Si chiedono solo quelle che non sono ancora arrivate.
 async function caricaMiniature() {
+  const mancanti = [];
+  for (let i = 0; i < elencoFoto.length; i++) {
+    if (!miniatureCaricate[elencoFoto[i].id]) {
+      mancanti.push(elencoFoto[i].id);
+    }
+  }
   const gruppo = 30;
-  for (let inizio = 0; inizio < elencoFoto.length; inizio = inizio + gruppo) {
+  for (let inizio = 0; inizio < mancanti.length; inizio = inizio + gruppo) {
     const ids = [];
-    for (let i = inizio; i < inizio + gruppo && i < elencoFoto.length; i++) {
-      ids.push(elencoFoto[i].id);
+    for (let i = inizio; i < inizio + gruppo && i < mancanti.length; i++) {
+      ids.push(mancanti[i]);
     }
     let risposta = null;
     for (let tentativo = 1; tentativo <= 3 && risposta === null; tentativo++) {
@@ -1087,6 +1242,10 @@ function collegaPulsanti() {
   prendi("pulsante-piano-b").addEventListener("click", apriFotocameraTelefono);
   prendi("file-piano-b").addEventListener("change", fotoDalTelefono);
   prendi("scarica-tutte").addEventListener("click", scaricaTutte);
+  // con "foto subito": dalla macchinetta alla galleria e ritorno
+  prendi("vai-galleria").addEventListener("click", apriGalleria);
+  prendi("benvenuto-galleria").addEventListener("click", apriGalleria);
+  prendi("torna-macchinetta").addEventListener("click", tornaAllaMacchinetta);
   prendi("visore-chiudi").addEventListener("click", chiudiVisore);
   prendi("visore-prima").addEventListener("click", function () {
     spostaVisore(-1);
@@ -1125,8 +1284,12 @@ function quandoCambiaVisibilita() {
   if (coda.length > 0) {
     inviaCoda();
   }
-  if (prendi("galleria").hidden) {
+  if (!rullinoChiuso()) {
     controllaFesta();
+  }
+  // con "foto subito" al ritorno sulla pagina si vedono subito le foto nuove
+  if (!prendi("galleria").hidden && festa.foto_subito) {
+    aggiornaGalleriaSeVisibile();
   }
 }
 

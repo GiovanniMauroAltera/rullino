@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Quintessential&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="stile.css?v=3">
+  <link rel="stylesheet" href="stile.css?v=4">
 </head>
 <body>
 
@@ -48,7 +48,10 @@
         </label>
         <button class="pulsante largo" id="pulsante-entra" type="submit">Prendi la macchinetta</button>
       </form>
-      <p class="nota">Niente anteprima e niente seconde possibilità: ogni scatto è definitivo. Le foto restano nascoste a tutti fino allo sviluppo.</p>
+      <p style="margin-top: 14px">
+        <button class="pulsante secondario largo" id="benvenuto-galleria" type="button" hidden>Guarda prima le foto</button>
+      </p>
+      <p class="nota" id="benvenuto-nota">Niente anteprima e niente seconde possibilità: ogni scatto è definitivo. Le foto restano nascoste a tutti fino allo sviluppo.</p>
     </div>
   </section>
 
@@ -56,7 +59,10 @@
   <section class="schermata fotocamera" id="fotocamera" hidden>
     <div class="barra-alta">
       <strong id="fotocamera-nome-festa"></strong>
-      <span class="pillola" id="indicatore-invio" hidden></span>
+      <span class="destra-barra">
+        <span class="pillola" id="indicatore-invio" hidden></span>
+        <button class="pillola pillola-pulsante" id="vai-galleria" type="button" hidden>Guarda le foto</button>
+      </span>
     </div>
     <div class="mirino">
       <video id="video" playsinline muted autoplay></video>
@@ -105,6 +111,7 @@
       <div class="testa-galleria">
         <h1 class="titolo-grande" id="galleria-nome-festa"></h1>
         <p class="testo-tenue" id="galleria-conteggio"></p>
+        <button class="pulsante piccolo" id="torna-macchinetta" type="button" hidden>Torna alla macchinetta</button>
       </div>
       <div class="filtri" id="filtri" role="group" aria-label="Mostra le foto di"></div>
       <div class="griglia" id="griglia"></div>
@@ -134,9 +141,9 @@
 
   <div class="lampo" id="lampo"></div>
 
-  <script src="impostazioni.js?v=3"></script>
-  <script src="comune.js?v=3"></script>
-  <script src="filtri.js?v=3"></script>
-  <script src="invitati.js?v=3"></script>
+  <script src="impostazioni.js?v=4"></script>
+  <script src="comune.js?v=4"></script>
+  <script src="filtri.js?v=4"></script>
+  <script src="invitati.js?v=4"></script>
 </body>
 </html>

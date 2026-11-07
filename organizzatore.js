@@ -80,6 +80,8 @@ function quandoCambiaSviluppo() {
   prendi("crea-data").hidden = valoreScelto("sviluppo") !== "scelgo";
 }
 
+// Con "Subito" l'orario non serve, ma il database ne vuole uno: si mette
+// domani alle 10, così se poi si passa allo sviluppo a orario è già pronto
 function orarioSviluppoScelto() {
   const scelta = valoreScelto("sviluppo");
   if (scelta === "scelgo") {
@@ -135,7 +137,8 @@ async function creaFesta(evento) {
       p_rivela_alle: sviluppo.toISOString(),
       p_galleria_per_tutti: valoreScelto("galleria") === "tutti",
       p_data_sulle_foto: prendi("crea-data-foto").checked,
-      p_codice: codice
+      p_codice: codice,
+      p_foto_subito: valoreScelto("sviluppo") === "subito"
     });
     organizzatore = { festa: risposta.festa, codice: codice };
     scriviMemoria("rullino_organizzatore", organizzatore);
@@ -238,15 +241,23 @@ async function aggiornaPannello() {
 
   prendi("pannello-nome").textContent = dati.nome;
   const quando = quandoInParole(dati.rivela_alle);
-  if (dati.rivelata) {
+  if (dati.foto_subito) {
+    prendi("pannello-stato").textContent = "Rullino aperto, " + dati.scatti_per_ospite + " scatti a testa. Le foto si vedono subito, appena scattate.";
+    segnaScelta("modo-pannello", "subito");
+  } else if (dati.rivelata) {
     prendi("pannello-stato").textContent = "Le foto sono sviluppate: gli invitati le vedono riaprendo il link o il QR code.";
     prendi("sviluppo-testo").textContent = "Sviluppate " + quando + ".";
     prendi("sviluppa-adesso").hidden = true;
+    segnaScelta("modo-pannello", "orario");
   } else {
     prendi("pannello-stato").textContent = "Rullino aperto, " + dati.scatti_per_ospite + " scatti a testa. Le foto si sviluppano " + quando + ".";
     prendi("sviluppo-testo").textContent = "Mancano allo sviluppo (" + quando + "):";
     prendi("sviluppa-adesso").hidden = false;
+    segnaScelta("modo-pannello", "orario");
   }
+  // il conto alla rovescia e l'orario servono solo senza "foto subito"
+  prendi("parte-orario").hidden = dati.foto_subito;
+  prendi("testo-subito").hidden = !dati.foto_subito;
   if (dati.galleria_per_tutti) {
     segnaScelta("galleria-pannello", "tutti");
   } else {
@@ -346,7 +357,8 @@ function segnaScelta(nomeGruppo, valore) {
 }
 
 function aggiornaConto() {
-  if (!dati) {
+  // con "foto subito" non c'è nessun conto alla rovescia
+  if (!dati || dati.foto_subito) {
     return;
   }
   const mancano = new Date(dati.rivela_alle).getTime() - (Date.now() + differenzaOrologio);
@@ -430,6 +442,30 @@ async function cambiaChiVede() {
     messaggio = "Dopo lo sviluppo le foto le vedono tutti";
   }
   await modifica({ p_galleria_per_tutti: perTutti }, messaggio);
+}
+
+// "Subito, appena scattate" oppure "All'orario dello sviluppo"
+async function cambiaModo() {
+  const subito = valoreScelto("modo-pannello") === "subito";
+  if (subito) {
+    await modifica({ p_foto_subito: true }, "Ora ogni foto si vede subito, appena scattata");
+    return;
+  }
+  // Tornando allo sviluppo a orario: se l'orario salvato è già passato il
+  // rullino si chiuderebbe subito, quindi si sposta a domani alle 10
+  const parametri = { p_foto_subito: false };
+  let messaggio = "Le foto ora si vedono allo sviluppo, " + quandoInParole(dati.rivela_alle);
+  if (new Date(dati.rivela_alle).getTime() <= Date.now() + differenzaOrologio) {
+    const domani = new Date();
+    domani.setDate(domani.getDate() + 1);
+    domani.setHours(10, 0, 0, 0);
+    parametri.p_rivela_alle = domani.toISOString();
+    messaggio = "Le foto ora si vedono allo sviluppo, domani alle 10:00 (puoi cambiarlo qui sotto)";
+  }
+  const fatto = await modifica(parametri, messaggio);
+  if (fatto) {
+    prendi("nuova-data").value = perCampoDataOra(new Date(dati.rivela_alle));
+  }
 }
 
 
@@ -596,8 +632,13 @@ async function condividiLink() {
 function preparaCartello() {
   prendi("cartello-nome").textContent = dati.nome;
   disegnaQr(prendi("cartello-qr"), indirizzoPerInvitati(dati.festa));
-  prendi("cartello-regole").textContent = "Hai " + dati.scatti_per_ospite + " scatti a testa, senza app da scaricare. Le foto si sviluppano " +
-    quandoInParole(dati.rivela_alle) + ".";
+  let regole = "Hai " + dati.scatti_per_ospite + " scatti a testa, senza app da scaricare. ";
+  if (dati.foto_subito) {
+    regole = regole + "Ogni foto compare subito nella galleria di tutti.";
+  } else {
+    regole = regole + "Le foto si sviluppano " + quandoInParole(dati.rivela_alle) + ".";
+  }
+  prendi("cartello-regole").textContent = regole;
   prendi("cartello").hidden = false;
 }
 
@@ -677,6 +718,10 @@ function collegaPulsanti() {
   const scelteGalleria = document.querySelectorAll('input[name="galleria-pannello"]');
   for (let i = 0; i < scelteGalleria.length; i++) {
     scelteGalleria[i].addEventListener("change", cambiaChiVede);
+  }
+  const scelteModo = document.querySelectorAll('input[name="modo-pannello"]');
+  for (let i = 0; i < scelteModo.length; i++) {
+    scelteModo[i].addEventListener("change", cambiaModo);
   }
   prendi("vai-apri").addEventListener("click", vaiAdApri);
   prendi("vai-crea").addEventListener("click", vaiACrea);

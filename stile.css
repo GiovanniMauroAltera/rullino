@@ -363,6 +363,22 @@ fieldset.campo {
   white-space: nowrap;
 }
 
+.destra-barra {
+  display: flex;
+  gap: 6px;
+  flex: none;
+}
+
+/* la pillola che è anche un pulsante ("Guarda le foto") */
+.pillola-pulsante {
+  color: var(--testo);
+  font-size: 15px;
+  cursor: pointer;
+  box-shadow: var(--riflesso);
+}
+
+.pillola-pulsante:hover { background: var(--vetro-forte); }
+
 .pillola.allarme {
   background: rgba(255, 90, 80, 0.2);
   border-color: rgba(255, 120, 110, 0.5);
@@ -589,6 +605,8 @@ fieldset.campo {
 .galleria .colonna { max-width: 1100px; }
 
 .testa-galleria { margin: 0 0 22px; }
+
+.testa-galleria .pulsante { margin-top: 14px; }
 
 .testa-galleria .titolo-grande { font-size: clamp(40px, 9vw, 68px); }
 
